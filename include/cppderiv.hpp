@@ -96,10 +96,11 @@ void NDeriv<ORDER,DIM>::run(NumpyArr<ORDER, DIM> init, double dt_)
 {
 	if (vals_n.size() != derivs(vals_n).size() && vals_n.rows() != derivs(vals_n).rows())
 		throw std::invalid_argument("Initial conditions must be the same dimensions as given derivatives");
-	
+
 	Timer t;
 	py::object stop;
 	ei::Array<double, 1, DIM> X;
+	plot_data.clear();
 	while (true) {
 		curr_alg();
 
@@ -111,7 +112,7 @@ void NDeriv<ORDER,DIM>::run(NumpyArr<ORDER, DIM> init, double dt_)
 			throw std::runtime_error("Timeout exceeded");
 
 		X = vals_n.row(0);
-		plot_data.emplace_back(X.data(), X.data()+X.size());
+		plot_data.emplace_back(X.data(), X.data()+DIM);
 	}
 }
 
