@@ -1,47 +1,64 @@
 #!/usr/bin/env python3
 
+from time import time
+
 import numpy as np
 import matplotlib.pyplot as plt
-from time import time
 
 import cppderiv
 
-g = -9.8
+##############################################################
+# diff_eq:
+# description of the problem
+#
+# row 0 -> 0th-order deriv
+# row 1 -> 1st-order deriv
+# row 2 -> 2nd-order deriv
+# ...
+# row n -> nth-order deriv
+#
+# each column represents a dimension if the terms are vectors
+###############################################################
 
-def deriv_func(vals_n):
-	return np.array([
-		vals_n[1], # dr/dt = v
-		vals_n[2], # dv/dt = a
-		[0,0]      # da/dt = 0			
-	])
+# basic projectile in 3 dims,
+# dr/dt = v
+# dv_y/dt = -g, dv_x/dt = dv_z/dt = 0
 
-def stop_condition(vals_n):
-	return vals_n[0, 1] < 0 # stop when r[1] < 0, or y < 0
-	
-timeout = 10 # seconds
+diff_eq = [
+	["vals[1, 0]", "vals[1,1]", "vals[1][2]"], 
+	["0", "-g", "0"],  
+]
 
-n_deriv = cppderiv.NDeriv(deriv_func, stop_condition, timeout)
+# any constant variables used in the diff_eq expressions
+consts = {"g": 9.80, "pi": np.pi}
 
-################################################################
+# Timestep
+dt = 1e-3
 
+# max time to run in seconds
+timeout = 10.0
+
+# create the object: an object describes a single set of ODEs
+n_deriv = cppderiv.NDeriv(diff_eq, consts, dt, timeout)
+
+# vals[0,1] = r[1] = y, stop when the projectile hits the ground or 30 seconds have passed
 vals_initial = np.array([
-	[1.0, 1.0],   # 0th-order term, r
-	[10.0, 10.0], # 1st-order term, v
-	[0.0, g]      # 2nd-order term, a
+	[1.0, 1.0, 0.0],   # 0th-order term, r
+	[10.0, 10.0, 0.0], # 1st-order term, v
 ])
 
-dt = 1e-4
+stop_condition = "vals[0, 1] < 0 or t > 30"
 
 start = time()
 
 # euler, rk2, rk4, leapfrog
-n_deriv.rk2(vals_initial, dt)
+n_deriv.rk2(vals_initial, stop_condition)
 
 print("Elapsed: {:1.2f} s".format(time() - start))
 
 data = np.array(n_deriv.get_plot_data())
 
-plt.plot(data[:,0], data[:,1])
+plt.plot(data[:,1], data[:,2])
 plt.title("Projectile Motion")
 plt.xlabel("$x$ (m)")
 plt.ylabel("$y$ (m)")
